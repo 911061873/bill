@@ -109,5 +109,7 @@ IMAGE_NAME=ghcr.io/<用户名>/<仓库名>:latest docker compose up -d --no-buil
 ```bash
 uv sync --frozen
 cp .env.example .env
-uv run --env-file .env uvicorn jz.main:app --app-dir src --reload --port 8000
+uv run python src/main.py
 ```
+
+直接运行入口文件时会自动读取项目根目录的 `.env`；操作系统中已经设置的同名环境变量优先级更高。

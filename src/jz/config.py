@@ -3,6 +3,13 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+
+# Direct local entry points load the project-level .env before settings are read.
+# Existing process variables keep priority.
+load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+
 
 class Settings:
     wx_appid = os.getenv("WX_APPID", "")

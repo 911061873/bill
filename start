@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# 获取脚本所在目录
+cd "$(dirname "$0")" || exit 1
+
+# 激活虚拟环境
+if [ -f ".venv/bin/activate" ]; then
+  source .venv/bin/activate
+else
+  echo "虚拟环境未找到，退出"
+  exit 1
+fi
+
+# 进入源码目录
+cd src || { echo "src 目录不存在"; exit 1; }
+
+# 启动 FastAPI 应用
+uvicorn --port 8001 'jz.main:app'

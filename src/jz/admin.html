@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>记账助手 · 管理后台</title>
+  <style>
+    :root{--ink:#17201d;--muted:#66736e;--paper:#f5f4ee;--card:#fffdf7;--line:#dddcd4;--brand:#176b52;--danger:#a33b32;--shadow:0 12px 35px #18352b14}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 system-ui,"Microsoft YaHei",sans-serif}button,input{font:inherit}.hidden{display:none!important}.login{min-height:100vh;display:grid;place-items:center;padding:24px}.login-card{width:min(420px,100%);background:var(--card);border:1px solid var(--line);padding:38px;border-radius:22px;box-shadow:var(--shadow)}.mark{width:48px;height:48px;border-radius:14px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:22px}.login h1{margin:20px 0 6px;font-size:26px}.sub{color:var(--muted);margin:0 0 28px}.field{display:grid;gap:7px;margin:14px 0}.field input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff}.primary{width:100%;padding:12px;border:0;border-radius:10px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer}.error{color:var(--danger);min-height:22px;margin-top:10px}.shell{min-height:100vh}.topbar{height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,4vw,54px);border-bottom:1px solid var(--line);background:#fffdf7cc;backdrop-filter:blur(12px);position:sticky;top:0;z-index:5}.brand{font-weight:800;font-size:18px}.ghost,.action{border:1px solid var(--line);background:#fff;padding:7px 10px;border-radius:8px;cursor:pointer}.danger{color:var(--danger)}main{padding:32px clamp(18px,4vw,54px) 60px;max-width:1500px;margin:auto}.heading{display:flex;justify-content:space-between;align-items:end;gap:20px}.heading h1{font-size:30px;margin:0}.heading p{color:var(--muted);margin:5px 0 0}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:28px 0}.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}.stat span{color:var(--muted)}.stat strong{display:block;font-size:28px;margin-top:5px}.tabs{display:flex;gap:8px;margin:30px 0 14px}.tab{padding:9px 15px;border:0;border-radius:9px;background:transparent;cursor:pointer;color:var(--muted)}.tab.active{background:var(--ink);color:#fff}.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}.toolbar{padding:14px;border-bottom:1px solid var(--line)}.toolbar input{width:min(340px,100%);padding:9px 12px;border:1px solid var(--line);border-radius:9px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap}th{font-size:12px;text-transform:uppercase;color:var(--muted);background:#f8f7f1}tbody tr:hover{background:#f8f7f1}.scroll{overflow:auto}.empty{text-align:center;color:var(--muted);padding:40px}.actions{display:flex;gap:6px}.toast{position:fixed;right:24px;bottom:24px;background:var(--ink);color:#fff;padding:12px 16px;border-radius:10px;box-shadow:var(--shadow);z-index:10}@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.heading{align-items:start;flex-direction:column}.topbar{padding:0 18px}}@media(max-width:450px){.stats{grid-template-columns:1fr}.login-card{padding:26px}}
+  </style>
+</head>
+<body>
+  <section id="loginView" class="login">
+    <form id="loginForm" class="login-card">
+      <div class="mark">账</div><h1>管理后台</h1><p class="sub">登录后管理用户、借款人与账单</p>
+      <label class="field">用户名<input id="username" autocomplete="username" required></label>
+      <label class="field">密码<input id="password" type="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">登录</button><div id="loginError" class="error"></div>
+    </form>
+  </section>
+  <section id="appView" class="shell hidden">
+    <header class="topbar"><div class="brand">记账助手 · 管理后台</div><button id="logout" class="ghost">退出登录</button></header>
+    <main>
+      <div class="heading"><div><h1>运营概览</h1><p>集中查看和维护记账服务数据</p></div><button id="refresh" class="ghost">刷新数据</button></div>
+      <div class="stats"><div class="stat"><span>用户</span><strong id="sUsers">—</strong></div><div class="stat"><span>借款人</span><strong id="sBorrowers">—</strong></div><div class="stat"><span>账单</span><strong id="sBills">—</strong></div><div class="stat"><span>账面总额</span><strong id="sTotal">—</strong></div></div>
+      <div class="tabs"><button class="tab active" data-tab="bills">账单</button><button class="tab" data-tab="borrowers">借款人</button><button class="tab" data-tab="users">用户</button></div>
+      <section class="panel"><div class="toolbar"><input id="search" placeholder="搜索当前列表…"></div><div class="scroll"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table><div id="empty" class="empty hidden">暂无数据</div></div></section>
+    </main>
+  </section>
+  <div id="toast" class="toast hidden"></div>
+  <script>
+    const $=s=>document.querySelector(s); let data=null, tab='bills';
+    async function api(path, options={}){const r=await fetch('/admin/api'+path,{headers:{'Content-Type':'application/json'},...options});if(r.status===401){showLogin();throw new Error('登录已过期')}let body={};try{body=await r.json()}catch{}if(!r.ok)throw new Error(body.detail||'操作失败');return body}
+    function showLogin(){data=null;$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden')}
+    function showApp(){ $('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden') }
+    function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.remove('hidden');setTimeout(()=>el.classList.add('hidden'),2200)}
+    const money=n=>new Intl.NumberFormat('zh-CN',{style:'currency',currency:'CNY'}).format(n||0);
+    async function load(){try{data=await api('/overview');showApp();$('#sUsers').textContent=data.stats.users;$('#sBorrowers').textContent=data.stats.borrowers;$('#sBills').textContent=data.stats.bills;$('#sTotal').textContent=money(data.stats.total_value);render()}catch(e){if(!data)showLogin()}}
+    const cell=(tr,text)=>{const td=document.createElement('td');td.textContent=text;tr.append(td)};
+    const btn=(label,kind,fn)=>{const b=document.createElement('button');b.className='action '+(kind||'');b.textContent=label;b.onclick=fn;return b};
+    function render(){if(!data)return;const q=$('#search').value.trim().toLowerCase();const rows=data[tab].filter(x=>JSON.stringify(x).toLowerCase().includes(q));const heads={bills:['ID','日期','金额','借款人','用户','操作'],borrowers:['ID','姓名','余额','所属用户','操作'],users:['ID','OpenID','余额','注册时间','操作']}[tab];$('#thead').innerHTML='<tr>'+heads.map(x=>`<th>${x}</th>`).join('')+'</tr>';const body=$('#tbody');body.textContent='';rows.forEach(x=>{const tr=document.createElement('tr');if(tab==='bills'){cell(tr,x.id);cell(tr,x.date);cell(tr,money(x.value));cell(tr,x.borrower_name);cell(tr,x.owner_openid);const td=document.createElement('td'),a=document.createElement('div');a.className='actions';a.append(btn('编辑','',()=>editBill(x)),btn('删除','danger',()=>remove('bills',x.id,`账单 #${x.id}`)));td.append(a);tr.append(td)}else if(tab==='borrowers'){cell(tr,x.id);cell(tr,x.name);cell(tr,money(x.total_value));cell(tr,x.owner_openid);const td=document.createElement('td'),a=document.createElement('div');a.className='actions';a.append(btn('改名','',()=>editBorrower(x)),btn('删除','danger',()=>remove('borrowers',x.id,x.name)));td.append(a);tr.append(td)}else{cell(tr,x.id);cell(tr,x.openid);cell(tr,money(x.total_value));cell(tr,new Date(x.reg_time).toLocaleString());const td=document.createElement('td');td.append(btn('删除用户','danger',()=>remove('users',x.id,x.openid)));tr.append(td)}body.append(tr)});$('#empty').classList.toggle('hidden',rows.length>0)}
+    async function remove(type,id,label){if(!confirm(`确定删除“${label}”吗？此操作不可撤销。`))return;try{await api(`/${type}/${id}`,{method:'DELETE'});toast('已删除');await load()}catch(e){toast(e.message)}}
+    async function editBorrower(x){const name=prompt('借款人姓名',x.name);if(name===null||!name.trim())return;try{await api(`/borrowers/${x.id}`,{method:'PATCH',body:JSON.stringify({name:name.trim()})});toast('已保存');await load()}catch(e){toast(e.message)}}
+    async function editBill(x){const value=prompt('金额',x.value);if(value===null||value.trim()===''||Number.isNaN(Number(value)))return;const date=prompt('日期（YYYY-MM-DD）',x.date);if(date===null)return;try{await api(`/bills/${x.id}`,{method:'PATCH',body:JSON.stringify({value:Number(value),date})});toast('已保存');await load()}catch(e){toast(e.message)}}
+    $('#loginForm').onsubmit=async e=>{e.preventDefault();$('#loginError').textContent='';try{await api('/login',{method:'POST',body:JSON.stringify({username:$('#username').value,password:$('#password').value})});$('#password').value='';await load()}catch(err){$('#loginError').textContent=err.message}};
+    $('#logout').onclick=async()=>{await api('/logout',{method:'POST'});showLogin()};$('#refresh').onclick=load;$('#search').oninput=render;document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelector('.tab.active').classList.remove('active');b.classList.add('active');tab=b.dataset.tab;$('#search').value='';render()});load();
+  </script>
+</body>
+</html>

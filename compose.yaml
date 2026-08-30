@@ -1,0 +1,14 @@
+services:
+  bill:
+    image: ${IMAGE_NAME:-bill:local}
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - bill-data:/app/data
+
+volumes:
+  bill-data:
